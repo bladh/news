@@ -5,10 +5,11 @@ import time
 import dominate
 from dominate.tags import *
 from bs4 import BeautifulSoup, SoupStrainer
+from multiprocessing.dummy import Pool as ThreadPool
 
 def extract_article(article_url):
     full_url = base_aftonbladet + article_url
-    status, response = http.request(full_url)
+    status, response = httplib2.Http().request(full_url)
     article_soup = BeautifulSoup(response)
     for script in article_soup(["script", "style"]):
         script.extract()
@@ -56,11 +57,10 @@ def get_links(base_url):
 base_aftonbladet = 'http://www.aftonbladet.se'
 newslinks = get_links(base_aftonbladet)
 
-articles = []
-for newslink in newslinks:
-    time.sleep(1)
-    article = extract_article(newslink)
-    articles.append(article)
+pool = ThreadPool(4)
+articles = pool.map(extract_article, newslinks)
+pool.close()
+pool.join()
 
 doc = make_html(articles)
 
